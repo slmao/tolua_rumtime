@@ -91,10 +91,28 @@ LUALIB_API bool tolua_isuint64(lua_State *L, int pos)
 
 LUALIB_API void tolua_pushuint64(lua_State *L, uint64_t n)
 {
-    uint64_t* p = (uint64_t*)lua_newuserdata(L, sizeof(uint64_t));
-    *p = n;
-    lua_getref(L, LUA_RIDX_UINT64);
-    lua_setmetatable(L, -2);                
+    lua_getglobal(L, "uint64");
+	lua_pushstring(L, "cache");
+	lua_rawget(L, -2);
+	char temp[64];
+	sprintf(temp, "%" PRIu64, n);
+	lua_pushstring(L, temp);
+	lua_rawget(L, -2);
+	uint64_t* p = (uint64_t*)lua_touserdata(L, -1);
+	if (p == NULL)
+	{
+		lua_pop(L, 1);
+		lua_pushstring(L, temp);
+		p = (uint64_t*)lua_newuserdata(L, sizeof(uint64_t));
+		*p = n;
+		lua_getref(L, LUA_RIDX_UINT64);
+		lua_setmetatable(L, -2);
+		lua_rawset(L, -3);
+		lua_pushstring(L, temp);
+		lua_rawget(L, -2);
+	}
+	lua_replace(L, -3);
+	lua_pop(L, 1);
 }
 
 //转换一个字符串为 uint64
@@ -149,7 +167,7 @@ LUALIB_API uint64_t tolua_touint64(lua_State *L, int pos)
     return n;
 }
 
-static uint64_t tolua_checkuint64(lua_State *L, int pos)
+uint64_t tolua_checkuint64(lua_State *L, int pos)
 {
     uint64_t n = 0;
     int type = lua_type(L, pos);
@@ -450,6 +468,15 @@ void tolua_openuint64(lua_State *L)
     lua_pushstring(L, "__index");
     lua_pushvalue(L, -2);
     lua_rawset(L, -3);    
+	
+	lua_pushstring(L, "cache");
+	lua_newtable(L);
+	lua_newtable(L);
+	lua_pushstring(L, "__mode");
+	lua_pushstring(L, "v");
+	lua_rawset(L, -3);
+	lua_setmetatable(L, -2);
+	lua_rawset(L, -3);
 
     lua_rawseti(L, LUA_REGISTRYINDEX, LUA_RIDX_UINT64);     
 }

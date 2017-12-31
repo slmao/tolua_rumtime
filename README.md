@@ -23,3 +23,8 @@ https://github.com/diegonehab/luasocket<br>
 http://www.inf.puc-rio.br/~roberto/struct/<br>
 **lpeg**<br>
 http://www.inf.puc-rio.br/~roberto/lpeg/lpeg.html
+
+# 与jarjin/tolua_runtime区别
+**添加pbc对uint64/int64的支持**<br>
+**为uint64/int64创建一全局弱表来保存以创建的userdata，可以保证值相等的两个uint64/int64指向同一个userdata数据（方便uint64/int64做key）**<br>
+**lua解析协议时，为空的字段直接返回nil而不是默认值**<br>

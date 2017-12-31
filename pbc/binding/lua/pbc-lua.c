@@ -21,6 +21,7 @@ extern "C" {
 #include <stdint.h>
 
 #include "pbc.h"
+#include "..\tolua.h"
 
 #if LUA_VERSION_NUM == 501
 
@@ -123,17 +124,40 @@ _rmessage_int32(lua_State *L) {
 	return 1;
 }
 
+static int 
+_rmessage_uint32(lua_State *L) {
+	struct pbc_rmessage * m = (struct pbc_rmessage *)checkuserdata(L,1);
+	const char * key = luaL_checkstring(L,2);
+	int index = luaL_checkinteger(L,3);
+	uint32_t v = pbc_rmessage_integer(m, key, index, NULL);
+	lua_pushlightuserdata(L,(void *)(uintptr_t)v);
+	
+	return 1;
+}
 
 static int
 _rmessage_int64(lua_State *L) {
 	struct pbc_rmessage * m = (struct pbc_rmessage *)checkuserdata(L,1);
 	const char * key = luaL_checkstring(L,2);
 	int index = luaL_checkinteger(L,3);
-	uint32_t v[2];
-	v[0] = pbc_rmessage_integer(m, key, index, &v[1]);
+	uint32_t hi, low;
+	low = pbc_rmessage_integer(m, key, index, &hi);
+	int64_t v = (int64_t)((uint64_t)hi << 32 | (uint64_t)low);
+	tolua_pushint64(L, v);
 
-	lua_pushlstring(L,(const char *)v,sizeof(v));
+	return 1;
+}
 
+static int
+_rmessage_uint64(lua_State *L) {
+	struct pbc_rmessage * m = (struct pbc_rmessage *)checkuserdata(L,1);
+	const char * key = luaL_checkstring(L,2);
+	int index = luaL_checkinteger(L,3);
+	uint32_t hi, low;
+	low = pbc_rmessage_integer(m, key, index, &hi);
+	uint64_t v = (uint64_t)hi << 32 | (uint64_t)low;
+	tolua_pushuint64(L, v);
+	
 	return 1;
 }
 
@@ -311,26 +335,17 @@ static int
 _wmessage_int64(lua_State *L) {
 	struct pbc_wmessage * m = (struct pbc_wmessage *)checkuserdata(L,1);
 	const char * key = luaL_checkstring(L,2);
-	switch (lua_type(L,3)) {
-	case LUA_TSTRING : {
-		size_t len = 0;
-		const char * number = lua_tolstring(L,3,&len);
-		if (len !=8 ) {
-			return luaL_error(L,"Need an 8 length string for int64");
-		}
-		const uint32_t * v = (const uint32_t *) number;
-		pbc_wmessage_integer(m, key, v[0] , v[1]);
-		break;
-	}
-	case LUA_TLIGHTUSERDATA : {
-		void * v = lua_touserdata(L,3);
-		uint64_t v64 = (uintptr_t)v;
-		pbc_wmessage_integer(m, key, (uint32_t)v64 , (uint32_t)(v64>>32));
-		break;
-	}
-	default :
-		return luaL_error(L, "Need an int64 type");
-	}
+	int64_t v64 = tolua_checkint64(L, 3);
+	pbc_wmessage_integer(m, key, (uint32_t)v64, (uint32_t)(v64 >> 32));
+	return 0;
+}
+
+static int
+_wmessage_uint64(lua_State *L) {
+	struct pbc_wmessage * m = (struct pbc_wmessage *)checkuserdata(L,1);
+	const char * key = luaL_checkstring(L,2);
+	uint64_t v64 = tolua_checkuint64(L, 3);
+	pbc_wmessage_integer(m, key, (uint32_t)v64, (uint32_t)(v64 >> 32));
 	return 0;
 }
 
@@ -869,6 +884,7 @@ static void
 push_value(lua_State *L, int type, const char * type_name, union pbc_value *v) {
 	switch(type) {
 	case PBC_INT:
+	case PBC_UINT:
 		lua_pushinteger(L, (int)v->i.low);
 		break;
 	case PBC_REAL:
@@ -898,12 +914,12 @@ push_value(lua_State *L, int type, const char * type_name, union pbc_value *v) {
 		break;
 	case PBC_INT64: {
 		uint64_t v64 = (uint64_t)(v->i.hi) << 32 | (uint64_t)(v->i.low);
-		lua_pushnumber(L,(lua_Number)(int64_t)v64);
+		tolua_pushint64(L, (int64_t)v64);
 		break;
 	}
-	case PBC_UINT: {
+	case PBC_UINT64: {
 		uint64_t v64 = (uint64_t)(v->i.hi) << 32 | (uint64_t)(v->i.low);
-		lua_pushnumber(L,(lua_Number)v64);
+		tolua_pushuint64(L, v64);
 		break;
 	}
 	default:
@@ -1060,6 +1076,7 @@ luaopen_protobuf_c(lua_State *L) {
 		{"_rmessage_integer" , _rmessage_integer },
 		{"_rmessage_int32", _rmessage_int32 },
 		{"_rmessage_int64", _rmessage_int64 },
+		{"_rmessage_uint64", _rmessage_uint64 },
 		{"_rmessage_int52", _rmessage_int52 },
 		{"_rmessage_uint52", _rmessage_uint52 },
 		{"_rmessage_real" , _rmessage_real },
@@ -1074,6 +1091,7 @@ luaopen_protobuf_c(lua_State *L) {
 		{"_wmessage_message", _wmessage_message },
 		{"_wmessage_int32", _wmessage_int32 },
 		{"_wmessage_int64", _wmessage_int64 },
+		{"_wmessage_uint64", _wmessage_uint64 },
 		{"_wmessage_int52", _wmessage_int52 },
 		{"_wmessage_uint52", _wmessage_uint52 },
 		{"_wmessage_buffer", _wmessage_buffer },

@@ -36,22 +36,42 @@ end
 local _reader = {}
 
 function _reader:int(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_integer(self._CObj , key , 0)
 end
 
 function _reader:real(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_real(self._CObj , key , 0)
 end
 
 function _reader:string(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_string(self._CObj , key , 0)
 end
 
 function _reader:bool(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_integer(self._CObj , key , 0) ~= 0
 end
 
 function _reader:message(key, message_type)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	local rmessage = c._rmessage_message(self._CObj , key , 0)
 	if rmessage then
 		local v = {
@@ -64,18 +84,42 @@ function _reader:message(key, message_type)
 end
 
 function _reader:int32(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_int32(self._CObj , key , 0)
 end
 
 function _reader:int64(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_int64(self._CObj , key , 0)
 end
 
+function _reader:uint64(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
+	return c._rmessage_uint64(self._CObj , key , 0)
+end
+
 function _reader:int52(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_int52(self._CObj , key , 0)
 end
 
 function _reader:uint52(key)
+	local n = c._rmessage_size(self._CObj, key)
+	if n == 0 then
+		return nil
+	end
 	return c._rmessage_uint52(self._CObj , key , 0)
 end
 
@@ -154,6 +198,16 @@ function _reader:int64_repeated(key)
 	return ret
 end
 
+function _reader:uint64_repeated(key)
+	local cobj = self._CObj
+	local n = c._rmessage_size(cobj , key)
+	local ret = {}
+	for i=0,n-1 do
+		tinsert(ret,  c._rmessage_uint64(cobj , key , i))
+	end
+	return ret
+end
+
 function _reader:int52_repeated(key)
 	local cobj = self._CObj
 	local n = c._rmessage_size(cobj , key)
@@ -188,8 +242,9 @@ end
 _reader[7] = function(msg) return _reader.int64 end
 _reader[8] = function(msg) return _reader.int32 end
 _reader[9] = _reader[5]
-_reader[10] = function(msg) return _reader.int52 end
-_reader[11] = function(msg) return _reader.uint52 end
+_reader[10] = function(msg) return _reader.int64 end
+_reader[11] = function(msg) return _reader.int end
+_reader[12] = function(msg) return _reader.uint64 end
 
 _reader[128+1] = function(msg) return _reader.int_repeated end
 _reader[128+2] = function(msg) return _reader.real_repeated end
@@ -205,8 +260,9 @@ end
 _reader[128+7] = function(msg) return _reader.int64_repeated end
 _reader[128+8] = function(msg) return _reader.int32_repeated end
 _reader[128+9] = _reader[128+5]
-_reader[128+10] = function(msg) return _reader.int52_repeated end
-_reader[128+11] = function(msg) return _reader.uint52_repeated end
+_reader[128+10] = function(msg) return _reader.int64_repeated end
+_reader[128+11] = function(msg) return _reader.int_repeated end
+_reader[128+12] = function(msg) return _reader.uint64_repeated end
 
 local _decode_type_meta = {}
 
@@ -255,6 +311,7 @@ local _writer = {
 	enum = c._wmessage_string,
 	string = c._wmessage_string,
 	int64 = c._wmessage_int64,
+	uint64 = c._wmessage_uint64,
 	int32 = c._wmessage_int32,
 	int52 = c._wmessage_int52,
 	uint52 = c._wmessage_uint52,
@@ -312,6 +369,12 @@ function _writer:int64_repeated(k,v)
 	end
 end
 
+function _writer:uint64_repeated(k,v)
+	for _,v in ipairs(v) do
+		c._wmessage_uint64(self,k,v)
+	end
+end
+
 function _writer:int52_repeated(k,v)
 	for _,v in ipairs(v) do
 		c._wmessage_int52(self,k,v)
@@ -338,8 +401,9 @@ end
 _writer[7] = function(msg) return _writer.int64 end
 _writer[8] = function(msg) return _writer.int32 end
 _writer[9] = _writer[5]
-_writer[10] = function(msg) return _writer.int52 end
-_writer[11] = function(msg) return _writer.uint52 end
+_writer[10] = function(msg) return _writer.int64 end
+_writer[11] = function(msg) return _writer.int end
+_writer[12] = function(msg) return _writer.uint64 end
 
 _writer[128+1] = function(msg) return _writer.int_repeated end
 _writer[128+2] = function(msg) return _writer.real_repeated end
@@ -355,8 +419,9 @@ end
 _writer[128+7] = function(msg) return _writer.int64_repeated end
 _writer[128+8] = function(msg) return _writer.int32_repeated end
 _writer[128+9] = _writer[128+5]
-_writer[128+10] = function(msg) return _writer.int52_repeated end
-_writer[128+11] = function(msg) return _writer.uint52_repeated end
+_writer[128+10] = function(msg) return _writer.int64_repeated end
+_writer[128+11] = function(msg) return _writer.int_repeated end
+_writer[128+12] = function(msg) return _writer.uint64_repeated end
 
 local _encode_type_meta = {}
 
