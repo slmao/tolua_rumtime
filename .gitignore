@@ -14,8 +14,8 @@
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
-*.so
+#*.dll
+#*.so
 *.so.*
 *.dylib
 
@@ -30,7 +30,7 @@
 # Debug files
 *.dSYM/
 /window
-/Plugins
+#/Plugins
 /android/libs
 /macnojit/build
 /iOS/build
