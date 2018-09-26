@@ -111,7 +111,7 @@ LUALIB_API void tolua_pushint64(lua_State* L, int64_t n)
 		lua_pushstring(L, temp);
 		lua_rawget(L, -2);
 	}
-	lua_replace(L, -3);
+	lua_replace(L, -2);
 	lua_pop(L, 1);
 }
 
